@@ -1,0 +1,78 @@
+name: checkbox
+
+services:
+  web:
+    container_name: checkbox.web
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/checkbox/src
+    environment:
+      - PYTHONUNBUFFERED=1
+    env_file:
+      .env
+    command: poetry run uvicorn checkbox.web.main:app --reload --host 0.0.0.0 --port 8000
+    depends_on:
+      - db
+
+  testrunner:
+    container_name: checkbox.testrunner
+    profiles:
+      - test
+    build:
+      context: .
+      dockerfile: docker/testrunner/Dockerfile
+    volumes:
+      - ./src:/checkbox/src
+      - ./tests:/checkbox/tests
+    env_file:
+      - test.env
+    depends_on:
+      - testing_db
+
+  db:
+    image: postgres:16.1
+    container_name: checkbox.db
+    restart: unless-stopped
+    env_file:
+      .env
+    environment:
+      POSTGRES_DB: ${POSTGRES__DATABASE}
+      POSTGRES_USER: ${POSTGRES__USER}
+      POSTGRES_PASSWORD: ${POSTGRES__PASSWORD}
+    ports:
+      - "${POSTGRES__PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/postgresql.conf:/etc/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql.conf
+
+  testing_db:
+    image: postgres:16.1
+    container_name: checkbox.testing_db
+    profiles:
+      - test
+    restart: unless-stopped
+    env_file:
+      test.env
+    environment:
+      POSTGRES_DB: ${POSTGRES__DATABASE}
+      POSTGRES_USER: ${POSTGRES__USER}
+      POSTGRES_PASSWORD: ${POSTGRES__PASSWORD}
+    volumes:
+      - ./docker/postgres/postgresql.conf:/etc/postgresql.conf:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: postgres -c config_file=/etc/postgresql.conf
+
+volumes:
+  postgres_data:
+    name: postgres_data
+
