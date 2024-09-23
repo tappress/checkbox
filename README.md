@@ -22,6 +22,8 @@ API Docs at http://127.0.0.1:8000/docs in you browser.
 
 ## Run tests
 
+1. Create `.env` file from `.env.template` (or leave empty, not used, required by docker since dev containers depend on this file)
+2. Run tests with command:
 ```shell
 make test
 ```

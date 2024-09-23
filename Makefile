@@ -4,7 +4,8 @@ test:
 	docker compose --env-file test.env rm -svf testrunner testing_db
 
 	docker compose --env-file test.env build testrunner
-	docker compose --env-file test.env run testrunner
+	docker compose --env-file test.env run testrunner poetry run alembic upgrade head
+	docker compose --env-file test.env run testrunner poetry run pytest tests
 
 	docker compose --env-file test.env rm -svf testrunner testing_db
 
